@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="目标看板">
+<meta name="theme-color" content="#10b981">
+<link rel="manifest" href="manifest.json">
+<title>我的目标看板</title>
+<style>
+:root {
+  --bg: #f2f4f8;
+  --card: #ffffff;
+  --card2: #f8fafb;
+  --text: #111827;
+  --sub: #6b7280;
+  --muted: #9ca3af;
+  --border: #e5e7eb;
+  --track: #eef0f5;
+  --accent: #10b981;
+  --accent2: #34d399;
+  --accent-bg: #ecfdf5;
+  --danger: #ef4444;
+  --danger-bg: #fef2f2;
+  --warn: #f59e0b;
+  --warn-bg: #fffbeb;
+  --blue: #3b82f6;
+  --blue-bg: #eff6ff;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+  --radius: 18px;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+}
+[data-dark] {
+  --bg: #0d1117;
+  --card: #161b22;
+  --card2: #1c2230;
+  --text: #e6edf3;
+  --sub: #8b949e;
+  --muted: #6e7681;
+  --border: #21262d;
+  --track: #21262d;
+  --accent: #3fb884;
+  --accent2: #56d4a0;
+  --accent-bg: rgba(63,184,132,0.12);
+  --danger: #f85149;
+  --danger-bg: rgba(248,81,73,0.12);
+  --warn: #e3b341;
+  --warn-bg: rgba(227,179,65,0.12);
+  --blue: #58a6ff;
+  --blue-bg: rgba(88,166,255,0.12);
+  --shadow: 0 2px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+*, *::before, *::after { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ── App Shell ── */
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; }
+
+/* ── Header ── */
+.app-header {
+  padding: calc(var(--safe-top) + 14px) 20px 14px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.app-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.header-actions { display: flex; gap: 8px; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--sub);
+  transition: all 0.18s;
+  font-size: 16px;
+}
+.icon-btn:active { transform: scale(0.92); background: var(--track); }
+
+/* ── Scroll Area ── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px 16px calc(var(--safe-bot) + 80px);
+}
+
+/* ── Today Ring ── */
+.today-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.ring-wrap { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+.ring-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.r-track { fill: none; stroke: var(--track); stroke-width: 10; }
+.r-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-dasharray: 245;
+  stroke-dashoffset: 245;
+  transition: stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1);
+}
+.ring-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-num { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+.ring-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.today-right { flex: 1; min-width: 0; }
+.today-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.today-items { display: flex; flex-direction: column; gap: 6px; }
+.today-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: var(--accent-bg);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s;
+  border: 1px solid transparent;
+}
+.today-item:active { transform: scale(0.97); }
+.today-item.done { background: var(--track); border-color: var(--border); }
+.today-item.done .ti-name { text-decoration: line-through; color: var(--muted); }
+.ti-check {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 6px; border: 2px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+}
+.today-item.done .ti-check { background: var(--accent); border-color: var(--accent); }
+.ti-check-svg { opacity: 0; transition: opacity 0.15s; }
+.today-item.done .ti-check-svg { opacity: 1; }
+.ti-em { font-size: 14px; }
+.ti-name { font-size: 13px; font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Section Header ── */
+.section-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 16px 0 10px;
+}
+.section-hd h2 { font-size: 14px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.4px; }
+.add-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer;
+  transition: all 0.18s;
+}
+.add-btn:active { transform: scale(0.95); }
+
+/* ── Goal Card ── */
+.goal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.35s, transform 0.35s;
+}
+.goal-card.show { opacity: 1; transform: translateY(0); }
+
+.gc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.gc-left { flex: 1; min-width: 0; }
+.gc-name { font-size: 15px; font-weight: 700; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.gc-em { font-size: 18px; }
+.gc-desc { font-size: 12px; color: var(--sub); line-height: 1.45; }
+.gc-badges { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 10px; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-streak { background: var(--warn-bg); color: var(--warn); }
+.badge-progress { background: var(--accent-bg); color: var(--accent); }
+.badge-done { background: var(--accent-bg); color: var(--accent); }
+.badge-behind { background: var(--danger-bg); color: var(--danger); }
+
+.more-btn {
+  width: 28px; height: 28px;
+  border-radius: 8px; border: none;
+  background: transparent; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; line-height: 1;
+  transition: all 0.18s;
+}
+.more-btn:active { background: var(--track); }
+
+/* Progress Bar */
+.gc-progress { margin-bottom: 10px; }
+.gc-pbar-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.gc-plabel { font-size: 11px; color: var(--muted); }
+.gc-pval { font-size: 11px; font-weight: 700; color: var(--accent); }
+.gc-bar-track {
+  height: 8px; border-radius: 8px; background: var(--track);
+  overflow: hidden; cursor: pointer; position: relative;
+}
+.gc-bar-track:active { opacity: 0.8; }
+.gc-bar-fill {
+  height: 100%; border-radius: 8px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  width: 0%; transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+
+/* Milestones */
+.gc-milestones { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; margin-top: 8px; position: relative; }
+.ms-line { position: absolute; left: 8px; right: 8px; top: 50%; height: 1.5px; background: var(--border); transform: translateY(-50%); z-index: 0; }
+.ms-line-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1.2s cubic-bezier(0.16,1,0.3,1); border-radius: 2px; }
+.ms-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--accent); background: var(--card);
+  position: relative; z-index: 1; transition: all 0.3s;
+}
+.ms-dot.hit { background: var(--accent); }
+.ms-label { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--muted); white-space: nowrap; }
+
+/* Checkin tap area */
+.gc-checkin {
+  display: flex; align-items: center; justify-content: center;
+  padding: 9px;
+  border-radius: 10px;
+  background: var(--accent-bg);
+  border: none; cursor: pointer;
+  color: var(--accent); font-size: 13px; font-weight: 600;
+  gap: 6px; margin-top: 10px;
+  transition: all 0.18s;
+  width: 100%;
+}
+.gc-checkin:active { transform: scale(0.97); }
+.gc-checkin.undone { background: var(--track); color: var(--sub); }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  padding: 10px 0 calc(var(--safe-bot) + 8px);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-around;
+  flex-shrink: 0;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 4px 16px;
+  border-radius: 10px; border: none; background: transparent;
+  cursor: pointer; color: var(--muted);
+  font-size: 10px; font-weight: 500;
+  transition: all 0.18s;
+  min-width: 60px;
+}
+.nav-item.active { color: var(--accent); }
+.nav-item svg { transition: transform 0.18s; }
+.nav-item.active svg { transform: scale(1.1); }
+.nav-item:active { transform: scale(0.92); }
+
+/* ── Quote ── */
+.quote-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 4px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.q-zh { font-size: 15px; font-weight: 500; line-height: 1.8; margin-bottom: 4px; }
+.q-en { font-size: 12px; color: var(--sub); line-height: 1.6; margin-bottom: 8px; }
+.q-author { font-size: 11px; color: var(--muted); }
+.q-dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.q-dot { width: 6px; height: 6px; border-radius: 3px; background: var(--border); cursor: pointer; transition: all 0.3s; }
+.q-dot.on { background: var(--accent); width: 18px; }
+
+/* ── Drawer / Sheet ── */
+.sheet-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 900; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.sheet-overlay.open { display: flex; }
+.sheet {
+  background: var(--card);
+  width: 100%; max-width: 480px;
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 calc(var(--safe-bot) + 16px);
+  max-height: 92dvh;
+  display: flex; flex-direction: column;
+  animation: sheetUp 0.32s cubic-bezier(0.16,1,0.3,1);
+  overflow: hidden;
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.sheet-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 12px auto 0;
+  flex-shrink: 0;
+}
+.sheet-title {
+  font-size: 17px; font-weight: 700;
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sheet-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--track); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--sub); font-size: 16px; font-weight: 400;
+  transition: all 0.18s;
+}
+.sheet-close:active { transform: scale(0.9); }
+.sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px 20px; flex: 1; }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--sub); margin-bottom: 5px; display: block; }
+.form-input {
+  width: 100%; padding: 11px 14px;
+  border-radius: 12px; border: 1px solid var(--border);
+  background: var(--card2); color: var(--text);
+  font-size: 15px; outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+  font-family: inherit;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-select { appearance: none; -webkit-appearance: none; cursor: pointer; }
+.emoji-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.emoji-opt {
+  width: 42px; height: 42px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--card2);
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+}
+.emoji-opt.sel { border-color: var(--accent); background: var(--accent-bg); }
+.emoji-opt:active { transform: scale(0.9); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.range-wrap { display: flex; align-items: center; gap: 10px; }
+.range-wrap input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 6px;
+  border-radius: 4px; background: var(--track); outline: none;
+  cursor: pointer;
+}
+.range-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--accent);
+  border: 3px solid var(--card); box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+.range-val { font-size: 14px; font-weight: 700; color: var(--accent); min-width: 36px; text-align: right; }
+
+/* Sheet footer */
+.sheet-footer {
+  padding: 12px 20px 0;
+  display: flex; gap: 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+.btn-full {
+  flex: 1; padding: 13px;
+  border-radius: 14px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.btn-full:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost { background: var(--track); color: var(--sub); }
+.btn-danger { background: var(--danger-bg); color: var(--danger); }
+
+/* ── Context Menu ── */
+.ctx-menu {
+  display: none; position: fixed;
+  background: var(--card);
+  border-radius: 14px; box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  overflow: hidden; z-index: 950;
+  animation: menuPop 0.2s cubic-bezier(0.16,1,0.3,1);
+  min-width: 160px;
+}
+@keyframes menuPop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+.ctx-menu.open { display: block; }
+.ctx-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
+  border: none; background: none; color: var(--text); width: 100%; text-align: left;
+}
+.ctx-item:active { background: var(--track); }
+.ctx-item.danger { color: var(--danger); }
+
+/* ── Stats Page ── */
+.stats-section { display: none; }
+.stats-section.show { display: block; }
+.goals-section { display: block; }
+.goals-section.hide { display: none; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card {
+  background: var(--card); border-radius: 14px;
+  padding: 14px; box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+.stat-num { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bot) + 90px); left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #111; color: #fff; padding: 10px 18px;
+  border-radius: 20px; font-size: 13px; font-weight: 500;
+  opacity: 0; transition: all 0.3s; z-index: 1000; pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Empty State ── */
+.empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted); font-size: 14px; line-height: 2;
+}
+.empty-icon { font-size: 48px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-title">&#127947; 我的目标</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeBtn" title="切换主题">
+        <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Scroll Area -->
+  <div class="scroll-area" id="scrollArea">
+
+    <!-- Today Overview -->
+    <div class="today-card">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 100 100">
+          <circle class="r-track" cx="50" cy="50" r="39"/>
+          <circle class="r-fill" id="ringFill" cx="50" cy="50" r="39"/>
+        </svg>
+        <div class="ring-inner">
+          <div class="ring-num" id="ringNum">0%</div>
+          <div class="ring-sub">今日</div>
+        </div>
+      </div>
+      <div class="today-right">
+        <div class="today-label">今日待完成</div>
+        <div class="today-items" id="todayItems"></div>
+      </div>
+    </div>
+
+    <!-- Goals Section -->
+    <div class="goals-section" id="goalsSection">
+      <div class="section-hd">
+        <h2>&#127775; 我的目标</h2>
+        <button class="add-btn" id="addGoalBtn">&#43; 新增目标</button>
+      </div>
+      <div id="goalsList"></div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section" id="statsSection">
+      <div class="section-hd">
+        <h2>&#128202; 统计总览</h2>
+      </div>
+      <div class="stat-grid" id="statGrid"></div>
+      <div class="quote-card">
+        <div class="q-zh" id="qZh"></div>
+        <div class="q-en" id="qEn"></div>
+        <div class="q-author" id="qAuthor"></div>
+        <div class="q-dots" id="qDots"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="navGoals" onclick="switchTab('goals')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      目标
+    </button>
+    <button class="nav-item" id="navStats" onclick="switchTab('stats')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      统计
+    </button>
+  </nav>
+</div>
+
+<!-- Edit/Add Sheet -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">
+      <span id="sheetTitleText">新增目标</span>
+      <button class="sheet-close" onclick="closeSheet()">&#215;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">目标图标</label>
+        <div class="emoji-row" id="emojiRow"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">目标名称</label>
+        <input class="form-input" id="fName" type="text" placeholder="例：每天跑步30分钟" maxlength="30">
+      </div>
+      <div class="form-group">
+        <label class="form-label">简短描述</label>
+        <input class="form-input" id="fDesc" type="text" placeholder="这个习惯能给你带来什么" maxlength="50">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">连续打卡天数</label>
+          <input class="form-input" id="fStreak" type="number" min="0" max="999" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <select class="form-input form-select" id="fStatus">
+            <option value="in-progress">进行中</option>
+            <option value="completed">已完成</option>
+            <option value="behind">落后</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">完成进度 &nbsp;<span id="fProgressVal" style="color:var(--accent);font-weight:700">0%</span></label>
+        <div class="range-wrap">
+          <input type="range" id="fProgress" min="0" max="100" value="0">
+        </div>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-full btn-ghost" onclick="closeSheet()">取消</button>
+      <button class="btn-full btn-primary" id="sheetSaveBtn" onclick="saveGoal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctxMenu">
+  <button class="ctx-item" onclick="ctxCheckin()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    打卡
+  </button>
+  <button class="ctx-item" onclick="ctxEdit()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    编辑
+  </button>
+  <button class="ctx-item danger" onclick="ctxDelete()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    删除
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ─── Data ─── */
+const EMOJIS = ['🎯','💪','📚','🏃','🧘','🎸','✏️','🌱','💡','🏊','🚴','🍎','🌟','🎨','📝'];
+
+const DEFAULT_GOALS = [
+  { id:'g1', name:'短视频 ≤ 1小时/天', desc:'控制屏幕时间，把精力投入更有价值的事', emoji:'📱', progress:0, streak:7, status:'in-progress', doneToday:false },
+  { id:'g2', name:'俯卧撑30＋引体向上10', desc:'每日力量训练，塑造更强健的体魄', emoji:'💪', progress:0, streak:7, status:'in-progress', doneToday:false },
+  { id:'g3', name:'朗读英语 20分钟/天', desc:'培养语感，提升口语流利度', emoji:'🇬🇧', progress:0, streak:7, status:'in-progress', doneToday:false },
+  { id:'g4', name:'西班牙语 15分钟/天', desc:'开拓第二外语，积累基础词汇', emoji:'🇪🇸', progress:0, streak:7, status:'behind', doneToday:false }
+];
+
+const QUOTES = [
+  { zh:'不积跬步，无以至千里。', en:'A journey of a thousand miles begins with a single step.', by:'荀子' },
+  { zh:'自律给我自由。', en:'Discipline is the bridge between goals and accomplishment.', by:'Jim Rohn' },
+  { zh:'播种习惯，收获性格；播种性格，收获命运。', en:'Sow an action, reap a habit; sow a habit, reap a character.', by:'William James' },
+  { zh:'坚持的人不一定赢，但放弃的人一定输。', en:'It does not matter how slowly you go as long as you do not stop.', by:'孔子' },
+  { zh:'今天的努力是明天的底气。', en:'Today\'s effort is tomorrow\'s confidence.', by:'佚名' }
+];
+
+let goals = [];
+let currentTab = 'goals';
+let editingId = null;
+let ctxTargetId = null;
+let selectedEmoji = '🎯';
+let quoteIdx = 0;
+
+/* ─── Storage ─── */
+function load() {
+  try {
+    const s = localStorage.getItem('goal-app-v3');
+    if (s) { goals = JSON.parse(s); return; }
+  } catch(e) {}
+  goals = JSON.parse(JSON.stringify(DEFAULT_GOALS));
+}
+function save() {
+  localStorage.setItem('goal-app-v3', JSON.stringify(goals));
+}
+function uid() { return 'g' + Date.now() + Math.random().toString(36).slice(2,6); }
+
+/* ─── Theme ─── */
+function initTheme() {
+  const t = localStorage.getItem('goal-app-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  if (t === 'dark') document.documentElement.setAttribute('data-dark','');
+  updateThemeIcon();
+}
+function toggleTheme() {
+  const isDark = document.documentElement.hasAttribute('data-dark');
+  if (isDark) { document.documentElement.removeAttribute('data-dark'); localStorage.setItem('goal-app-theme','light'); }
+  else { document.documentElement.setAttribute('data-dark',''); localStorage.setItem('goal-app-theme','dark'); }
+  updateThemeIcon();
+}
+function updateThemeIcon() {
+  const isDark = document.documentElement.hasAttribute('data-dark');
+  document.getElementById('themeIcon').innerHTML = isDark
+    ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+    : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+}
+document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+/* ─── Ring ─── */
+function updateRing() {
+  const done = goals.filter(g => g.doneToday).length;
+  const pct = goals.length ? Math.round(done / goals.length * 100) : 0;
+  const circ = 2 * Math.PI * 39;
+  const fill = document.getElementById('ringFill');
+  fill.style.strokeDasharray = circ;
+  fill.style.strokeDashoffset = circ - (pct / 100) * circ;
+  animCount(document.getElementById('ringNum'), pct);
+}
+function animCount(el, to) {
+  let from = parseInt(el.textContent) || 0;
+  const dur = 800, start = performance.now();
+  const step = (now) => {
+    const p = Math.min((now - start) / dur, 1);
+    el.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))) + '%';
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ─── Today Items ─── */
+function renderToday() {
+  const el = document.getElementById('todayItems');
+  if (!goals.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">暂无目标，点击右上角新增</div>'; return; }
+  el.innerHTML = goals.map(g => `
+    <div class="today-item ${g.doneToday?'done':''}" onclick="quickCheckin('${g.id}')">
+      <div class="ti-check">
+        <svg class="ti-check-svg" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+      </div>
+      <span class="ti-em">${g.emoji}</span>
+      <span class="ti-name">${g.name}</span>
+    </div>`).join('');
+}
+
+/* ─── Goal Cards ─── */
+function statusInfo(s) {
+  if (s === 'completed') return { cls:'badge-done', txt:'已完成' };
+  if (s === 'behind') return { cls:'badge-behind', txt:'落后' };
+  return { cls:'badge-progress', txt:'进行中' };
+}
+function getMilestones(streak) {
+  const defs = [{pos:3,label:'3天'},{pos:7,label:'7天'},{pos:14,label:'14天'},{pos:21,label:'21天'}];
+  return defs.map(m => ({ ...m, hit: streak >= m.pos }));
+}
+function renderGoals() {
+  const list = document.getElementById('goalsList');
+  if (!goals.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div>还没有目标<br>点击「新增目标」开始吧！</div>`;
+    return;
+  }
+  list.innerHTML = '';
+  goals.forEach((g, i) => {
+    const si = statusInfo(g.status);
+    const ms = getMilestones(g.streak);
+    const msHTML = ms.map(m => `<div class="ms-dot ${m.hit?'hit':''}" style="position:relative"><div class="ms-label">${m.label}</div></div>`).join('');
+    const pct = g.progress || 0;
+    const card = document.createElement('div');
+    card.className = 'goal-card';
+    card.dataset.id = g.id;
+    card.innerHTML = `
+      <div class="gc-top">
+        <div class="gc-left">
+          <div class="gc-name"><span>${g.emoji}</span> ${escHtml(g.name)}</div>
+          <div class="gc-desc">${escHtml(g.desc||'')}</div>
+        </div>
+        <div class="gc-badges">
+          <span class="badge badge-streak">🔥 ${g.streak}天</span>
+          <button class="more-btn" onclick="openCtx(event,'${g.id}')">···</button>
+        </div>
+      </div>
+      <div class="gc-progress">
+        <div class="gc-pbar-row"><span class="gc-plabel">完成进度</span><span class="gc-pval">${pct}%</span></div>
+        <div class="gc-bar-track" onclick="checkin('${g.id}')">
+          <div class="gc-bar-fill" data-w="${pct}"></div>
+        </div>
+      </div>
+      <div class="gc-milestones">
+        <div class="ms-line"><div class="ms-line-fill" data-w="${Math.min(pct, 100)}"></div></div>
+        ${msHTML}
+      </div>
+      <button class="gc-checkin ${g.doneToday?'':'undone'}" onclick="checkin('${g.id}')">
+        ${g.doneToday ? '✅ 今日已打卡 — 点击撤销' : '👆 点击打卡'}
+      </button>`;
+    list.appendChild(card);
+    setTimeout(() => {
+      card.classList.add('show');
+      card.querySelector('.gc-bar-fill').style.width = pct + '%';
+      card.querySelector('.ms-line-fill').style.width = Math.min(pct, 100) + '%';
+    }, 60 + i * 80);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── Checkin ─── */
+function checkin(id) {
+  const g = goals.find(x => x.id === id);
+  if (!g) return;
+  if (g.doneToday) {
+    g.doneToday = false;
+    g.streak = Math.max(0, g.streak - 1);
+    g.progress = Math.max(0, g.progress - 5);
+    toast('已撤销打卡');
+  } else {
+    g.doneToday = true;
+    g.streak += 1;
+    g.progress = Math.min(100, g.progress + 5);
+    if (g.progress >= 100) g.status = 'completed';
+    else if (g.status === 'behind') g.status = 'in-progress';
+    toast('打卡成功 🎉 连续 ' + g.streak + ' 天！');
+  }
+  save();
+  renderAll();
+}
+function quickCheckin(id) { checkin(id); }
+
+/* ─── Context Menu ─── */
+function openCtx(e, id) {
+  e.stopPropagation();
+  ctxTargetId = id;
+  const menu = document.getElementById('ctxMenu');
+  menu.classList.add('open');
+  const r = e.currentTarget.getBoundingClientRect();
+  const mw = 180;
+  let x = r.right - mw;
+  if (x < 8) x = 8;
+  let y = r.bottom + 4;
+  if (y + 160 > window.innerHeight) y = r.top - 160;
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+function ctxCheckin() { hideCtx(); if (ctxTargetId) checkin(ctxTargetId); }
+function ctxEdit() { hideCtx(); if (ctxTargetId) openSheet(ctxTargetId); }
+function ctxDelete() {
+  hideCtx();
+  if (!ctxTargetId) return;
+  const g = goals.find(x => x.id === ctxTargetId);
+  if (g && confirm(`确定删除「${g.name}」吗？此操作不可撤销。`)) {
+    goals = goals.filter(x => x.id !== ctxTargetId);
+    save(); renderAll();
+    toast('已删除目标');
+  }
+}
+function hideCtx() { document.getElementById('ctxMenu').classList.remove('open'); }
+document.addEventListener('click', hideCtx);
+
+/* ─── Sheet ─── */
+function buildEmojiRow() {
+  const row = document.getElementById('emojiRow');
+  row.innerHTML = EMOJIS.map(em =>
+    `<button class="emoji-opt ${em===selectedEmoji?'sel':''}" onclick="selEmoji('${em}')">${em}</button>`
+  ).join('');
+}
+function selEmoji(em) {
+  selectedEmoji = em;
+  document.querySelectorAll('.emoji-opt').forEach(b => b.classList.toggle('sel', b.textContent === em));
+}
+
+function openSheet(id) {
+  editingId = id || null;
+  const g = id ? goals.find(x => x.id === id) : null;
+  document.getElementById('sheetTitleText').textContent = g ? '编辑目标' : '新增目标';
+  selectedEmoji = g ? g.emoji : '🎯';
+  document.getElementById('fName').value = g ? g.name : '';
+  document.getElementById('fDesc').value = g ? (g.desc||'') : '';
+  document.getElementById('fStreak').value = g ? g.streak : 0;
+  document.getElementById('fStatus').value = g ? g.status : 'in-progress';
+  const pv = g ? g.progress : 0;
+  document.getElementById('fProgress').value = pv;
+  document.getElementById('fProgressVal').textContent = pv + '%';
+  buildEmojiRow();
+  document.getElementById('sheetOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fName').focus(), 350);
+}
+function closeSheet() {
+  document.getElementById('sheetOverlay').classList.remove('open');
+  editingId = null;
+}
+function saveGoal() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { toast('请输入目标名称'); return; }
+  const progress = parseInt(document.getElementById('fProgress').value) || 0;
+  const streak = Math.max(0, parseInt(document.getElementById('fStreak').value) || 0);
+  const status = document.getElementById('fStatus').value;
+  const desc = document.getElementById('fDesc').value.trim();
+  if (editingId) {
+    const g = goals.find(x => x.id === editingId);
+    if (g) { g.name = name; g.desc = desc; g.emoji = selectedEmoji; g.progress = progress; g.streak = streak; g.status = status; }
+    toast('目标已更新 ✓');
+  } else {
+    goals.push({ id: uid(), name, desc, emoji: selectedEmoji, progress, streak, status, doneToday: false });
+    toast('新目标已添加 🎯');
+  }
+  save(); closeSheet(); renderAll();
+}
+
+document.getElementById('fProgress').addEventListener('input', function() {
+  document.getElementById('fProgressVal').textContent = this.value + '%';
+});
+document.getElementById('addGoalBtn').addEventListener('click', () => openSheet());
+document.getElementById('sheetOverlay').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeSheet(); });
+
+/* ─── Quotes ─── */
+function renderQuotes() {
+  const dotsEl = document.getElementById('qDots');
+  dotsEl.innerHTML = QUOTES.map((_, i) =>
+    `<div class="q-dot ${i===0?'on':''}" onclick="showQ(${i})"></div>`
+  ).join('');
+  showQ(0);
+  setInterval(() => { quoteIdx = (quoteIdx + 1) % QUOTES.length; showQ(quoteIdx); }, 5000);
+}
+function showQ(i) {
+  quoteIdx = i;
+  const q = QUOTES[i];
+  const zh = document.getElementById('qZh');
+  const en = document.getElementById('qEn');
+  const by = document.getElementById('qAuthor');
+  zh.style.opacity = en.style.opacity = by.style.opacity = '0';
+  setTimeout(() => {
+    zh.textContent = '\u201c' + q.zh + '\u201d';
+    en.textContent = q.en;
+    by.textContent = '— ' + q.by;
+    zh.style.opacity = en.style.opacity = by.style.opacity = '1';
+    zh.style.transition = en.style.transition = by.style.transition = 'opacity 0.4s';
+  }, 280);
+  document.querySelectorAll('.q-dot').forEach((d,j) => d.classList.toggle('on', j===i));
+}
+
+/* ─── Stats ─── */
+function renderStats() {
+  const done = goals.filter(g => g.doneToday).length;
+  const maxStreak = goals.reduce((m, g) => Math.max(m, g.streak), 0);
+  const avgProgress = goals.length ? Math.round(goals.reduce((s, g) => s + g.progress, 0) / goals.length) : 0;
+  const completed = goals.filter(g => g.status === 'completed').length;
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${done}/${goals.length}</div><div class="stat-lbl">今日完成</div></div>
+    <div class="stat-card"><div class="stat-num">${maxStreak}</div><div class="stat-lbl">最长连续天数</div></div>
+    <div class="stat-card"><div class="stat-num">${avgProgress}%</div><div class="stat-lbl">平均进度</div></div>
+    <div class="stat-card"><div class="stat-num">${completed}</div><div class="stat-lbl">已完成目标</div></div>`;
+}
+
+/* ─── Tab Switch ─── */
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('goalsSection').classList.toggle('hide', tab !== 'goals');
+  document.getElementById('statsSection').classList.toggle('show', tab === 'stats');
+  document.getElementById('navGoals').classList.toggle('active', tab === 'goals');
+  document.getElementById('navStats').classList.toggle('active', tab === 'stats');
+  if (tab === 'stats') { renderStats(); renderQuotes(); }
+  document.getElementById('scrollArea').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ─── Toast ─── */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ─── Render All ─── */
+function renderAll() {
+  renderToday();
+  renderGoals();
+  updateRing();
+  if (currentTab === 'stats') renderStats();
+}
+
+/* ─── Init ─── */
+load();
+initTheme();
+renderAll();
+
+/* ─── Service Worker ─── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
