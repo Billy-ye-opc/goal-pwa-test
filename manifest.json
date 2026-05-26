@@ -1,0 +1,22 @@
+{
+  "name": "Goal Dashboard",
+  "short_name": "Goals",
+  "start_url": "/goal-pwa-test/",
+  "scope": "/goal-pwa-test/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='38' fill='%236366f1'/><text x='96' y='120' font-size='90' text-anchor='middle' fill='white'>🎯</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%236366f1'/><text x='256' y='320' font-size='240' text-anchor='middle' fill='white'>🎯</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
